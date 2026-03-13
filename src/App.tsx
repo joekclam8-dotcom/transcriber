@@ -111,17 +111,19 @@ export default function App() {
           
           const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: [
-              {
-                inlineData: {
-                  data: base64String,
-                  mimeType: mimeType,
+            contents: {
+              parts: [
+                {
+                  inlineData: {
+                    data: base64String,
+                    mimeType: mimeType,
+                  }
+                },
+                {
+                  text: 'Please transcribe the following audio. The audio may contain a mixture of English, Cantonese, and Mandarin. Provide the transcription in the original languages spoken.'
                 }
-              },
-              {
-                text: 'Please transcribe the following audio. The audio may contain a mixture of English, Cantonese, and Mandarin. Provide the transcription in the original languages spoken.'
-              }
-            ]
+              ]
+            }
           });
 
           setTranscript(response.text || 'No transcription available.');
