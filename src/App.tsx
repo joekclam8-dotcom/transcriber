@@ -1,33 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
-import { Mic, Square, Upload, FileAudio, Loader2, RefreshCw } from 'lucide-react';
+import { Upload, FileAudio, Loader2, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [recordingTime, setRecordingTime] = useState(0);
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (isRecording) {
-      timerRef.current = window.setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setRecordingTime(0);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isRecording]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -40,56 +20,11 @@ export default function App() {
     }
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const file = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
-        setAudioFile(file);
-        const url = URL.createObjectURL(audioBlob);
-        setAudioDataUrl(url);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setTranscript('');
-      setError(null);
-    } catch (err) {
-      console.error('Error accessing microphone:', err);
-      setError('Could not access microphone. Please check permissions.');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
   const clearAudio = () => {
     setAudioFile(null);
     setAudioDataUrl(null);
     setTranscript('');
     setError(null);
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const transcribeAudio = async () => {
@@ -151,17 +86,17 @@ export default function App() {
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight">Multilingual Audio Transcriber</h1>
           <p className="text-stone-500">
-            Transcribe audio containing English, Cantonese, and Mandarin. Upload a file or record directly.
+            Transcribe audio containing English, Cantonese, and Mandarin. Upload an audio file to begin.
           </p>
         </header>
 
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 space-y-6">
-          {!audioFile && !isRecording && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-stone-300 rounded-xl hover:bg-stone-50 hover:border-stone-400 transition-colors cursor-pointer group">
-                <Upload className="w-8 h-8 text-stone-400 group-hover:text-stone-600 mb-3" />
-                <span className="text-sm font-medium text-stone-700">Upload Audio File</span>
-                <span className="text-xs text-stone-500 mt-1">MP3, WAV, M4A, WEBM</span>
+          {!audioFile && (
+            <div className="grid grid-cols-1 gap-4">
+              <label className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-stone-300 rounded-xl hover:bg-stone-50 hover:border-stone-400 transition-colors cursor-pointer group">
+                <Upload className="w-10 h-10 text-stone-400 group-hover:text-stone-600 mb-4" />
+                <span className="text-base font-medium text-stone-700">Upload Audio File</span>
+                <span className="text-sm text-stone-500 mt-2">MP3, WAV, M4A, WEBM</span>
                 <input 
                   type="file" 
                   accept="audio/*" 
@@ -169,40 +104,10 @@ export default function App() {
                   className="hidden" 
                 />
               </label>
-
-              <button 
-                onClick={startRecording}
-                className="flex flex-col items-center justify-center p-8 border-2 border-stone-200 rounded-xl bg-stone-100 hover:bg-stone-200 transition-colors group cursor-pointer"
-              >
-                <Mic className="w-8 h-8 text-stone-600 group-hover:text-stone-800 mb-3" />
-                <span className="text-sm font-medium text-stone-700">Record Microphone</span>
-                <span className="text-xs text-stone-500 mt-1">Click to start recording</span>
-              </button>
             </div>
           )}
 
-          {isRecording && (
-            <div className="flex flex-col items-center justify-center p-8 border-2 border-red-100 bg-red-50 rounded-xl space-y-4">
-              <div className="flex items-center space-x-3">
-                <span className="relative flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
-                </span>
-                <span className="text-red-700 font-medium font-mono text-lg">
-                  {formatTime(recordingTime)}
-                </span>
-              </div>
-              <button 
-                onClick={stopRecording}
-                className="flex items-center space-x-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium transition-colors shadow-sm cursor-pointer"
-              >
-                <Square className="w-4 h-4 fill-current" />
-                <span>Stop Recording</span>
-              </button>
-            </div>
-          )}
-
-          {audioFile && !isRecording && (
+          {audioFile && (
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-stone-100 rounded-xl border border-stone-200">
                 <div className="flex items-center space-x-3 overflow-hidden">
