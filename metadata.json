@@ -1,0 +1,5 @@
+{
+  "name": "Multilingual Audio Transcriber",
+  "description": "Transcribe audio files or microphone recordings containing English, Cantonese, and Mandarin to text.",
+  "requestFramePermissions": ["microphone"]
+}
