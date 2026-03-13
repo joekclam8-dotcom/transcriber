@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Google AI Studio App</title>
+    <script>
+      // Polyfill navigator.permissions for mobile browsers where it might be undefined
+      // This prevents the AI Studio harness (content.js) from crashing when it tries to call .query()
+      if (typeof navigator !== 'undefined' && !navigator.permissions) {
+        try {
+          Object.defineProperty(navigator, 'permissions', {
+            value: {
+              query: function() {
+                return Promise.resolve({ state: 'prompt', onchange: null });
+              }
+            },
+            configurable: true,
+            writable: true
+          });
+        } catch (e) {
+          console.error('Failed to polyfill navigator.permissions', e);
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
